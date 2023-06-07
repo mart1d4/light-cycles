@@ -1,59 +1,45 @@
-import java.util.LinkedList;
-import java.util.Objects;
-import java.util.Scanner;
+import java.util.*;
 
 public class Main {
+    private final static Scanner scan = new Scanner(System.in); // To get string inputs
     private final static char blockedChar = 'H';
     private final static char bonusChar = 'F';
-    private final static char firstPlayerChar = 'X';
-    private final static char firstPlayerColor = 'B';
-    private final static char secondPlayerChar = 'O';
-    private final static char secondPlayerColor = 'R';
 
-    private final static Scanner scan = new Scanner(System.in);
+    public static String[] colors = {
+            "Black",
+            "Red",
+            "Green",
+            "Yellow",
+            "Purple",
+            "Cyan",
+            "White"
+    };
+
+    public static LinkedList<Player> players = new LinkedList<>();
+    public static LinkedList<String> playerSymbols = new LinkedList<>();
+    public static LinkedList<String> playerColors = new LinkedList<>();
 
     public static void main(String[] args) {
-        // Create table and instantiate it with blank characters
-        int tableSize = 10;
-        char[][] table = new char[tableSize][tableSize];
-        for (int i = 0; i < table.length; i++) {
-            for (int j = 0; j < table.length; j++) {
-                table[i][j] = ' ';
-            }
+        char[][] board = createBoard(); // Initialise game's board
+        addPlayersToGame(board.length); // Initialise games' players
+
+        // Add players' position to the board
+        for (Player player: players) {
+            board[player.getIPos()][player.getJPos()] = player.getSymbol().charAt(0);
         }
 
-        addPropToTable(table, 7, blockedChar);
-        addPropToTable(table, 3, bonusChar);
-
-        // Add the bikes to the table
-        int[] firstPlayerCoords = { 0, 0 };
-        int[] secondPlayerCoords = { table.length -1 , table.length -1 };
-
-        table[firstPlayerCoords[0]][firstPlayerCoords[1]] = firstPlayerChar;
-        table[secondPlayerCoords[0]][secondPlayerCoords[1]] = secondPlayerChar;
-
-        int currentPlayer = 1;
         int isGameEnded;
+        int currentPlayer = 0;
 
         do {
-            int[] currentCords;
-            if (currentPlayer == 1) {
-                currentCords = firstPlayerCoords;
-            } else {
-                currentCords = secondPlayerCoords;
-            }
+            System.out.print("\033[H\033[2J");
+            System.out.flush();
 
-            printTable(table);
-            LinkedList<String> directions = getAvailableDirections(table, currentCords);
+            Player player = players.get(currentPlayer);
+            printBoard(board);
+            LinkedList<String> directions = getAvailableDirections(board, player.getPosition(), player.getBonuses() > 0);
 
-            char symbol;
-            if (currentPlayer == 1) {
-                symbol = firstPlayerChar;
-            } else {
-                symbol = secondPlayerChar;
-            }
-
-            System.out.println("Player " + currentPlayer + ", where do you want to go? (Your symbol is " + symbol + ")");
+            System.out.println(player.getName() + ", where do you want to go? (Your symbol is " + player.getSymbol() + ")");
             System.out.print("Available directions [");
 
             for (int i = 0; i < directions.size(); i++) {
@@ -71,121 +57,252 @@ public class Main {
             }
             System.out.print("\n");
 
-            makeMove(table, currentPlayer, currentCords, capitalize(userInput));
+            makeMove(board, player, capitalize(userInput));
+            isGameEnded = isGameEnded(board);
 
-            isGameEnded = isGameEnded(table, currentPlayer, currentCords);
-
-            if (currentPlayer == 1) {
-                currentPlayer = 2;
+            if (currentPlayer == players.size() - 1) {
+                currentPlayer = 0;
             } else {
-                currentPlayer = 1;
+                currentPlayer++;
             }
         }
-        while (isGameEnded == 0);
+        while (isGameEnded == -1);
 
-        printTable(table);
-        System.out.println("Congratulations! Player " + isGameEnded + " won this game.\nDo you want to play again?");
+        printBoard(board);
+        System.out.println("Congratulations!\nUnfortunately, " + players.get(isGameEnded).getName() + " lost this game.\nDo you want to play again?");
+    }
+
+    public static char[][] createBoard() {
+        System.out.print("Enter a size for the board (5-100): ");
+
+        int boardSize = scan.nextInt();
+        while (boardSize < 5 || boardSize > 100) {
+            System.out.print("Invalid size. Please enter a correct board size (5-100): ");
+            boardSize = scan.nextInt();
+        }
+
+        // Create board and instantiate it with blank characters
+        char[][] board = new char[boardSize][boardSize];
+        for (int i = 0; i < board.length; i++) {
+            for (int j = 0; j < board.length; j++) {
+                board[i][j] = ' ';
+            }
+        }
+
+        System.out.print("Enter the number of blocked places (0-" + boardSize + "): ");
+        int blocked = scan.nextInt();
+        while (blocked < 0 || blocked > boardSize) {
+            System.out.print("Invalid number. Please enter a correct number (0-" + boardSize + "): ");
+            blocked = scan.nextInt();
+        }
+
+        System.out.print("Enter the number of bonuses (0-" + boardSize + "): ");
+        int bonuses = scan.nextInt();
+        while (bonuses < 0 || bonuses > boardSize) {
+            System.out.print("Invalid number. Please enter a correct number (0-" + boardSize + "): ");
+            bonuses = scan.nextInt();
+        }
+
+        addPropBoard(board, blocked, blockedChar);
+        addPropBoard(board, bonuses, bonusChar);
+
+        return board;
+    }
+
+    public static void addPlayersToGame(int boardLength) {
+        System.out.print("Enter the number of players (2-4): ");
+
+        int numberOfPlayers = scan.nextInt();
+        while (numberOfPlayers < 0 || numberOfPlayers > 4) {
+            System.out.print("Invalid number. Please enter a correct number (2-4): ");
+            numberOfPlayers = scan.nextInt();
+        }
+
+        createPlayers(numberOfPlayers, boardLength);
+    }
+
+    public static void createPlayers(int amount, int boardLength) {
+        int[][] defaultPositions = {
+                { 0, 0 },
+                { boardLength - 1, 0 },
+                { 0, boardLength - 1 },
+                { boardLength - 1, boardLength - 1 }
+        };
+
+        for (int i = 1; i <= amount; i++) {
+            System.out.print("\033[H\033[2J");
+            System.out.flush();
+
+            System.out.print("Player " + i + ", enter your name: ");
+
+            String name = capitalize(scan.next());
+            while (name.length() == 0 || nameTaken(name)) {
+                System.out.print("Invalid name, enter it again: ");
+                name = capitalize(scan.next());
+            }
+
+            System.out.print("Choose a symbol to be displayed as (1 char): ");
+
+            String symbol = scan.next();
+            while (symbol.length() != 1 || symbolTaken(symbol)) {
+                System.out.print("Invalid name, enter it again: ");
+                symbol = scan.next();
+            }
+
+            System.out.print("Choose the color of your light [Black-Red-Green-Yellow-Blue-Purple-Cyan-White]: ");
+
+            String color = capitalize(scan.next());
+            while (!Arrays.asList(colors).contains(color) || colorTaken(color)) {
+                System.out.print("Invalid color, enter it again: ");
+                color = capitalize(scan.next());
+            }
+
+            Player newPlayer = new Player(
+                    name,
+                    symbol,
+                    color,
+                    defaultPositions[i],
+                    0,
+                    0,
+                    0
+            );
+
+            players.add(newPlayer);
+            playerSymbols.add(newPlayer.getSymbol());
+            playerColors.add(newPlayer.getColor());
+        }
+    }
+
+    public static boolean nameTaken(String name) {
+        for (Player player: players) {
+            if (Objects.equals(player.getName(), name)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public static boolean symbolTaken(String symbol) {
+        if (symbol.charAt(0) == blockedChar || symbol.charAt(0) == bonusChar) {
+            return true;
+        }
+
+        for (Player player: players) {
+            if (Objects.equals(player.getSymbol(), symbol)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public static boolean colorTaken(String color) {
+        for (Player player: players) {
+            if (Objects.equals(player.getColor(), color)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public static String capitalize(String string) {
         return string.substring(0, 1).toUpperCase() + string.substring(1).toLowerCase();
     }
 
-    public static void makeMove(char[][] table, int player, int[] coords, String move) {
-        int i = coords[0];
-        int j = coords[1];
+    public static void makeMove(char[][] board, Player player, String move) {
+        int i = player.getIPos();
+        int j = player.getJPos();
 
-        char charToAdd;
-        char colorToAdd;
-        if (player == 1) {
-            charToAdd = firstPlayerChar;
-            colorToAdd = firstPlayerColor;
-        } else {
-            charToAdd = secondPlayerChar;
-            colorToAdd = secondPlayerColor;
-        }
-
-        table[i][j] = colorToAdd;
+        board[i][j] = (char)Arrays.asList(colors).indexOf(player.getColor());
 
         if (Objects.equals(move, "Left")) {
-            table[i][j-1] = charToAdd;
-            coords[1] = j - 1;
+            j--;
         } else if (Objects.equals(move, "Right")) {
-            table[i][j+1] = charToAdd;
-            coords[1] = j + 1;
+            j++;
         } else if (Objects.equals(move, "Up")) {
-            table[i-1][j] = charToAdd;
-            coords[0] = i - 1;
+            i--;
         } else if (Objects.equals(move, "Down")) {
-            table[i+1][j] = charToAdd;
-            coords[0] = i + 1;
-        } else {
-            System.out.println("Wrong move.");
+            i++;
         }
+
+        if (board[i][j] == bonusChar) {
+            player.addBonus();
+        } else if (board[i][j] == blockedChar) {
+            if (player.getBonuses() > 0) {
+                player.removeBonus();
+            } else {
+                return;
+            }
+        }
+
+        int[] pos = { i, j };
+
+        board[i][j] = player.getSymbol().charAt(0);
+        player.setPosition(pos);
     }
 
-    public static void addPropToTable(char[][] table, int amount, char prop) {
-        // Adds the specified amount of prop to the table
+    public static void addPropBoard(char[][] board, int amount, char prop) {
+        // Adds the specified amount of prop to the board
         for (int i = 0; i < amount; i++) {
-            int iRand = (int)(Math.random() * table.length);
-            int jRand = (int)(Math.random() * table.length);
+            int iRand = (int)(Math.random() * board.length - 8) + 8;
+            int jRand = (int)(Math.random() * board.length - 8) + 8;
 
-            while (
-                    table[iRand][jRand] == blockedChar
-                    || table[iRand][jRand] == bonusChar
-                    || (iRand == 0 && jRand == 0)
-                    || (iRand == table.length - 1 && jRand == table.length - 1)
-            ) {
-                iRand = (int)(Math.random() * table.length);
-                jRand = (int)(Math.random() * table.length);
+            while (board[iRand][jRand] == blockedChar || board[iRand][jRand] == bonusChar) {
+                iRand = (int)(Math.random() * board.length - 8) + 8;
+                jRand = (int)(Math.random() * board.length - 8) + 8;
             }
 
-            table[iRand][jRand] = prop;
+            board[iRand][jRand] = prop;
         }
     }
 
-    public static LinkedList<String> getAvailableDirections(char[][] table, int[] coords) {
-        int i = coords[0];
-        int j = coords[1];
+    public static LinkedList<String> getAvailableDirections(char[][] board, int[] pos, boolean hasBonus) {
+        int i = pos[0];
+        int j = pos[1];
 
         LinkedList<String> directions = new LinkedList<>();
 
-        if (i < table.length - 1 && table[i+1][j] == ' ') {
+        if (i < board.length - 1 && (board[i+1][j] == ' ' || board[i+1][j] == bonusChar || hasBonus)) {
             directions.add("Down");
         }
 
-        if (i > 0 && table[i-1][j] == ' ') {
+        if (i > 0 && (board[i-1][j] == ' ' || board[i-1][j] == bonusChar || hasBonus)) {
             directions.add("Up");
         }
 
-        if (j < table.length - 1 && table[i][j+1] == ' ') {
+        if (j < board.length - 1 && (board[i][j+1] == ' ' || board[i][j+1] == bonusChar || hasBonus)) {
             directions.add("Right");
         }
 
-        if (j > 0 && table[i][j-1] == ' ') {
+        if (j > 0 && (board[i][j-1] == ' ' || board[i][j-1] == bonusChar || hasBonus)) {
             directions.add("Left");
         }
 
         return directions;
     }
 
-    public static void printTable(char[][] table)
+    public static void printBoard(char[][] board)
     {
-        for (char[] chars : table) {
+        HashMap<Character, String> colors = new HashMap<>() {{
+            put('0', "\u001B[40m");
+            put('1', "\u001B[41m");
+            put('2', "\u001B[42m");
+            put('3', "\u001B[43m");
+            put('4', "\u001B[44m");
+            put('5', "\u001B[45m");
+            put('6', "\u001B[46m");
+        }};
+
+        for (char[] chars : board) {
             // Display the line separators
             for (int i = 0; i < chars.length; i++){
                 System.out.print("+---");
             }
             System.out.println("+");
 
-            // Display the table's content
-            for (int j = 0; j < table.length; j++) {
-                if (chars[j] == 'B') {
-                    // Make background appear blue - https://stackoverflow.com/questions/5762491
-                    System.out.print("|" + "\u001B[44m" + "   " + "\u001B[0m");
-                } else if (chars[j] == 'R') {
-                    // Make background appear red
-                    System.out.print("|" + "\u001B[41m" + "   " + "\u001B[0m");
+            // Display the board's content
+            for (int j = 0; j < board.length; j++) {
+                if (colors.containsKey(chars[j])) {
+                    System.out.print("|" + colors.get(chars[j]) + "   " + "\u001B[0m");
                 } else {
                     System.out.print("| " + chars[j] + " ");
                 }
@@ -193,31 +310,26 @@ public class Main {
             System.out.println("|");
         }
 
-        for (int i = 0; i < table.length; i++){
+        for (int i = 0; i < board.length; i++){
             System.out.print("+---");
         }
         System.out.println("+\n");
     }
 
-    public static int isGameEnded(char[][] table, int player, int[] coords) {
-        // Returns 0 if the game needs to still be going
-        // Returns 1 if player 1 won (game ended)
-        // Returns 2 if player 2 won (game ended)
+    public static int isGameEnded(char[][] board) {
+        // Returns the index of the player who lost, if any
+        // Returns -1 if the game can continue
 
         // Game ends if a player can't move,
-        // so let's check the specified player's coords
-        // to see if he can make a move
-        LinkedList<String> directions = getAvailableDirections(table, coords);
+        // so let's check if any player can't make a move.
+        for (Player player : players) {
+            LinkedList<String> directions = getAvailableDirections(board, player.getPosition(), player.getBonuses() > 0);
 
-        if (directions.isEmpty()) {
-            // The player can't move, he lost and the game needs to end
-            if (player == 1) {
-                return 2;
-            } else {
-                return 1;
+            if (directions.isEmpty()) {
+                return players.indexOf(player);
             }
-        } else {
-            return 0;
         }
+
+        return -1;
     }
 }
