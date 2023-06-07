@@ -10,6 +10,7 @@ public class Main {
             "Red",
             "Green",
             "Yellow",
+            "Blue",
             "Purple",
             "Cyan",
             "White"
@@ -148,6 +149,7 @@ public class Main {
                 System.out.print("Invalid name, enter it again: ");
                 symbol = scan.next();
             }
+            playerSymbols.add(symbol);
 
             System.out.print("Choose the color of your light [Black-Red-Green-Yellow-Blue-Purple-Cyan-White]: ");
 
@@ -156,6 +158,7 @@ public class Main {
                 System.out.print("Invalid color, enter it again: ");
                 color = capitalize(scan.next());
             }
+            playerColors.add(color);
 
             Player newPlayer = new Player(
                     name,
@@ -187,21 +190,11 @@ public class Main {
             return true;
         }
 
-        for (Player player: players) {
-            if (Objects.equals(player.getSymbol(), symbol)) {
-                return true;
-            }
-        }
-        return false;
+        return playerSymbols.contains(symbol);
     }
 
     public static boolean colorTaken(String color) {
-        for (Player player: players) {
-            if (Objects.equals(player.getColor(), color)) {
-                return true;
-            }
-        }
-        return false;
+        return playerColors.contains(color);
     }
 
     public static String capitalize(String string) {
@@ -212,7 +205,8 @@ public class Main {
         int i = player.getIPos();
         int j = player.getJPos();
 
-        board[i][j] = (char)Arrays.asList(colors).indexOf(player.getColor());
+        int index = Arrays.asList(colors).indexOf(player.getColor());
+        board[i][j] = String.valueOf(index).charAt(0);
 
         if (Objects.equals(move, "Left")) {
             j--;
@@ -261,28 +255,27 @@ public class Main {
 
         LinkedList<String> directions = new LinkedList<>();
 
-        if (i < board.length - 1 && (board[i+1][j] == ' ' || board[i+1][j] == bonusChar || hasBonus)) {
+        if (i < board.length - 1 && (board[i+1][j] == ' ' || board[i+1][j] == bonusChar || (hasBonus && !playerSymbols.contains(String.valueOf(board[i+1][j]))))) {
             directions.add("Down");
         }
 
-        if (i > 0 && (board[i-1][j] == ' ' || board[i-1][j] == bonusChar || hasBonus)) {
+        if (i > 0 && (board[i-1][j] == ' ' || board[i-1][j] == bonusChar || (hasBonus && !playerSymbols.contains(String.valueOf(board[i-1][j]))))) {
             directions.add("Up");
         }
 
-        if (j < board.length - 1 && (board[i][j+1] == ' ' || board[i][j+1] == bonusChar || hasBonus)) {
+        if (j < board.length - 1 && (board[i][j+1] == ' ' || board[i][j+1] == bonusChar || (hasBonus && !playerSymbols.contains(String.valueOf(board[i][j+1]))))) {
             directions.add("Right");
         }
 
-        if (j > 0 && (board[i][j-1] == ' ' || board[i][j-1] == bonusChar || hasBonus)) {
+        if (j > 0 && (board[i][j-1] == ' ' || board[i][j-1] == bonusChar || (hasBonus && !playerSymbols.contains(String.valueOf(board[i][j-1]))))) {
             directions.add("Left");
         }
 
         return directions;
     }
 
-    public static void printBoard(char[][] board)
-    {
-        HashMap<Character, String> colors = new HashMap<>() {{
+    public static void printBoard(char[][] board) {
+        HashMap<Character, String> colorHashes = new HashMap<>() {{
             put('0', "\u001B[40m");
             put('1', "\u001B[41m");
             put('2', "\u001B[42m");
@@ -301,8 +294,8 @@ public class Main {
 
             // Display the board's content
             for (int j = 0; j < board.length; j++) {
-                if (colors.containsKey(chars[j])) {
-                    System.out.print("|" + colors.get(chars[j]) + "   " + "\u001B[0m");
+                if (colorHashes.containsKey(chars[j])) {
+                    System.out.print("|" + colorHashes.get(chars[j]) + "   " + "\u001B[0m");
                 } else {
                     System.out.print("| " + chars[j] + " ");
                 }
@@ -331,5 +324,13 @@ public class Main {
         }
 
         return -1;
+    }
+
+    public static char stringToChar(String string) {
+        return string.charAt(0);
+    }
+
+    public static String charToString(char character) {
+        return String.valueOf(character);
     }
 }

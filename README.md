@@ -34,7 +34,7 @@ A terminal-based Light Cycles game inspired by the movie Tron. The game allows r
 - [ ] Implement a GUI version with Java Swing
 - [ ] Add AI opponents for single-player mode
 - [ ] Improve collision detection and game mechanics
-- [ ] Add customizable settings and options
+- [X] Add customizable settings and options
 
 ## Contributing
 Contributions are welcome! If you'd like to contribute to this project, please follow these steps:
