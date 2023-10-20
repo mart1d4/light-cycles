@@ -2,23 +2,26 @@ public class Player {
     private final String name;
     private final String symbol;
     private final String color;
+    private final boolean isBot;
     private int[] position;
     private int bonuses;
     private int victories;
     private int defeats;
 
     public Player(
-        String name,
-        String symbol,
-        String color,
-        int[] position,
-        int bonuses,
-        int victories,
-        int defeats
+            String name,
+            String symbol,
+            String color,
+            boolean isBot,
+            int[] position,
+            int bonuses,
+            int victories,
+            int defeats
     ) {
         this.name = name;
         this.symbol = symbol;
         this.color = color;
+        this.isiBot = isBot;
         this.position = position;
         this.bonuses = bonuses;
         this.victories = victories;
@@ -35,6 +38,10 @@ public class Player {
 
     public String getColor() {
         return this.color;
+    }
+
+    public boolean isUserBot() {
+        return this.isBot;
     }
 
     public int[] getPosition() {

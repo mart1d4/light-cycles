@@ -1,8 +1,11 @@
-### IntelliJ IDEA ###
+# Junk Files
 out/
 !**/src/main/**/out/
 !**/src/test/**/out/
-.idea/
+src/**.class
 
-### VS Code ###
+
+# IDEs
+.idea/
+.fleet/
 .vscode/

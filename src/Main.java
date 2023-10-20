@@ -38,6 +38,7 @@ public class Main {
 
             Player player = players.get(currentPlayer);
             printBoard(board);
+            System.out.print("Number of bonuses: " + player.getBonuses);
             LinkedList<String> directions = getAvailableDirections(board, player.getPosition(), player.getBonuses() > 0);
 
             System.out.println(player.getName() + ", where do you want to go? (Your symbol is " + player.getSymbol() + ")");
@@ -111,59 +112,56 @@ public class Main {
     }
 
     public static void addPlayersToGame(int boardLength) {
-        System.out.print("Enter the number of players (2-4): ");
-
-        int numberOfPlayers = scan.nextInt();
-        while (numberOfPlayers < 0 || numberOfPlayers > 4) {
-            System.out.print("Invalid number. Please enter a correct number (2-4): ");
+        int numberOfPlayers = 0;
+        do {
+            System.out.print("Enter the number of players (2-4): ");
             numberOfPlayers = scan.nextInt();
-        }
+        } while (numberOfPlayers < 2 || numberOfPlayers > 4);
 
-        createPlayers(numberOfPlayers, boardLength);
+        int numberOfBots = 1000;
+        do {
+            System.out.print("Enter the number of bots (0-" + numberOfPlayers - 1 + "): ");
+            numberOfBots = scan.nextInt();
+        } while (numberOfBots + 1 > numberOfPlayers);
+
+        createPlayers(numberOfPlayers, numberOfBots, boardLength);
     }
 
-    public static void createPlayers(int amount, int boardLength) {
+    public static void createPlayers(int players, int bots, int boardLength) {
         int[][] defaultPositions = {
                 { 0, 0 },
+                { boardLength - 1, boardLength - 1 },
                 { boardLength - 1, 0 },
-                { 0, boardLength - 1 },
-                { boardLength - 1, boardLength - 1 }
+                { 0, boardLength - 1 }
         };
 
-        for (int i = 1; i <= amount; i++) {
+        for (int i = 0; i < players; i++) {
             System.out.print("\033[H\033[2J");
             System.out.flush();
 
-            System.out.print("Player " + i + ", enter your name: ");
-
-            String name = capitalize(scan.next());
-            while (name.length() == 0 || nameTaken(name)) {
-                System.out.print("Invalid name, enter it again: ");
+            String name = "";
+            do {
+                System.out.print("Player " + (i + 1) + ", enter your name: ");
                 name = capitalize(scan.next());
-            }
+            } while (name.length() == 0 || nameTaken(name));
 
-            System.out.print("Choose a symbol to be displayed as (1 char): ");
-
-            String symbol = scan.next();
-            while (symbol.length() != 1 || symbolTaken(symbol)) {
-                System.out.print("Invalid name, enter it again: ");
+            String symbol = "";
+            do {
+                System.out.print("Player " + (i + 1) + ", choose a symbol (1 char): ");
                 symbol = scan.next();
-            }
-            playerSymbols.add(symbol);
+            } while (symbol.length() != 1 || symbolTaken(symbol));
 
-            System.out.print("Choose the color of your light [Black-Red-Green-Yellow-Blue-Purple-Cyan-White]: ");
-
-            String color = capitalize(scan.next());
-            while (!Arrays.asList(colors).contains(color) || colorTaken(color)) {
-                System.out.print("Invalid color, enter it again: ");
+            String color = "";
+            do {
+                System.out.print("Player " + (i + 1) + ", choose the color of your light [Black-Red-Green-Yellow-Blue-Purple-Cyan-White]: ");
                 color = capitalize(scan.next());
-            }
-            playerColors.add(color);
+            } while (!Arrays.asList(colors).contains(color) || colorTaken(color));
 
             Player newPlayer = new Player(
                     name,
                     symbol,
                     color,
+                    false,
                     defaultPositions[i],
                     0,
                     0,
